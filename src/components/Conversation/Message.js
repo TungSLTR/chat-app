@@ -17,10 +17,6 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
 
-// const EndOfMessagesForAutoScroll = styled.div`
-//   margin-bottom: 30px;
-// `
-
 const Message = ({ conversation, messages }) => {
     const theme = useTheme();
     const dispatch = useDispatch()
@@ -43,15 +39,12 @@ const Message = ({ conversation, messages }) => {
             return messagesSnapshot.docs.map((message) => 
             (<TextMsg key={message.id} message={transformMessage(message)} />))
         }
-
         return null
     }
     // const endOfMessagesRef = useRef(null)
-
     // const scrollToBottom = () => {
     //   endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth'})
     // }
-
   return (
     <Box p={3}>
       <Stack spacing={3}>
