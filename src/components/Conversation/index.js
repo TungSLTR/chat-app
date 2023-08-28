@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Box, Stack, Typography } from "@mui/material";
 import Header from "./Header";
-// import Footer from "./Footer";
+import Footer from "./Footer";
 import Message from "./Message";
 import { useParams } from "react-router-dom";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -81,166 +81,166 @@ const Actions = [
     title: "Contact",
   },
 ];
-const Footer = ({conversation, messages, onSendMessage}) => {
-  const { id } = useParams();
+// const Footer = ({conversation, messages, onSendMessage}) => {
+//   const { id } = useParams();
 
-  const [newMessage, setNewMessage] = useState('')
-  const [user, _loading, _error] = useAuthState(auth)
-  const addMessageToDbAndUpdateLastSeen = async () => {
-    await setDoc(
-      doc(db, 'users', user?.email), {
-        lastSeen: serverTimestamp()
-      }, {merge: true}
-    )
+//   const [newMessage, setNewMessage] = useState('')
+//   const [user, _loading, _error] = useAuthState(auth)
+//   const addMessageToDbAndUpdateLastSeen = async () => {
+//     await setDoc(
+//       doc(db, 'users', user?.email), {
+//         lastSeen: serverTimestamp()
+//       }, {merge: true}
+//     )
 
-    await addDoc(collection(db, 'messages'), {
-      conversation_id: id,
-      sent_at: serverTimestamp(),
-    text: newMessage,
-    user: user?.email
-    })
-    // reset input field
-  setNewMessage('')
-  // scroll to bottom
-  onSendMessage();
-  }
-  const sendMessageOnEnter = event => {
-    if (event.key === "Enter") {
-      event.preventDefault()
-      if (!newMessage) return
-      addMessageToDbAndUpdateLastSeen()
-    }
-  }
+//     await addDoc(collection(db, 'messages'), {
+//       conversation_id: id,
+//       sent_at: serverTimestamp(),
+//     text: newMessage,
+//     user: user?.email
+//     })
+//     // reset input field
+//   setNewMessage('')
+//   // scroll to bottom
+//   onSendMessage();
+//   }
+//   const sendMessageOnEnter = event => {
+//     if (event.key === "Enter") {
+//       event.preventDefault()
+//       if (!newMessage) return
+//       addMessageToDbAndUpdateLastSeen()
+//     }
+//   }
 
-  const sendMessageOnClick = event => {
-    event.preventDefault()
-    if (!newMessage) return
-    addMessageToDbAndUpdateLastSeen()
-  }
+//   const sendMessageOnClick = event => {
+//     event.preventDefault()
+//     if (!newMessage) return
+//     addMessageToDbAndUpdateLastSeen()
+//   }
 
-  const [openActions, setOpenActions] = React.useState(false);
+//   const [openActions, setOpenActions] = React.useState(false);
    
      
 
 
-  const theme = useTheme();
+//   const theme = useTheme();
 
-  const [openPicker, setOpenPicker] = React.useState(false);
+//   const [openPicker, setOpenPicker] = React.useState(false);
 
-  return (
-    <Box
-      p={2}
-      sx={{
-        width: "100%",
-        backgroundColor:
-          theme.palette.mode === "light"
-            ? "#F8FAFF"
-            : theme.palette.background.default,
-        boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
-      }}
-    >
-      <Stack direction={"row"} alignItems={"center"} spacing={3}>
-        {/* StyledInput */}
-        <Stack sx={{ width: "100%" }}>
-          <Box
-            sx={{
-              display: openPicker ? "inline" : "none",
-              zIndex: 10,
-              position: "fixed",
-              bottom: 81,
-              right: 100,
-            }}
-          >
-            <Picker
-              theme={theme.palette.mode}
-              data={data}
-              onEmojiSelect={console.log}
-            />
-          </Box>
+//   return (
+//     <Box
+//       p={2}
+//       sx={{
+//         width: "100%",
+//         backgroundColor:
+//           theme.palette.mode === "light"
+//             ? "#F8FAFF"
+//             : theme.palette.background.default,
+//         boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.25)",
+//       }}
+//     >
+//       <Stack direction={"row"} alignItems={"center"} spacing={3}>
+//         {/* StyledInput */}
+//         <Stack sx={{ width: "100%" }}>
+//           <Box
+//             sx={{
+//               display: openPicker ? "inline" : "none",
+//               zIndex: 10,
+//               position: "fixed",
+//               bottom: 81,
+//               right: 100,
+//             }}
+//           >
+//             <Picker
+//               theme={theme.palette.mode}
+//               data={data}
+//               onEmojiSelect={console.log}
+//             />
+//           </Box>
 
-          {/* <ChatInput setOpenPicker={setOpenPicker} /> */}
-           <StyledInput
-        fullWidth
-        placeholder="Aa"
-        variant="filled"
-        value={newMessage}
-        onChange={event => setNewMessage(event.target.value)}
-        onKeyDown={sendMessageOnEnter}
-        InputProps={{
-          disableUnderline: true,
-          startAdornment: (
-            <Stack sx={{ width: "max-content" }}>
-              <Stack
-                sx={{
-                  position: "relative",
-                  display: openActions ? "inline-block" : "none",
-                }}
-              >
-                {Actions.map((el) => (
-                  <Tooltip placement="right" title={el.title}>
-                    <Fab
-                      sx={{
-                        position: "absolute",
-                        top: -el.y,
-                        backgroundColor: el.color,
-                      }}
-                    >
-                      {el.icon}
-                    </Fab>
-                  </Tooltip>
-                ))}
-              </Stack>
-              <InputAdornment>
-                <IconButton
-                  onClick={() => {
-                    setOpenActions((prev) => !prev);
-                  }}
-                >
-                  <LinkSimple />
-                </IconButton>
-              </InputAdornment>
-            </Stack>
-          ),
-          endAdornment: (
-            <InputAdornment>
-              <IconButton
-                onClick={() => {
-                  setOpenPicker((prev) => !prev);
-                }}
-              >
-                <Smiley />
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
-        </Stack>
+//           {/* <ChatInput setOpenPicker={setOpenPicker} /> */}
+//            <StyledInput
+//         fullWidth
+//         placeholder="Aa"
+//         variant="filled"
+//         value={newMessage}
+//         onChange={event => setNewMessage(event.target.value)}
+//         onKeyDown={sendMessageOnEnter}
+//         InputProps={{
+//           disableUnderline: true,
+//           startAdornment: (
+//             <Stack sx={{ width: "max-content" }}>
+//               <Stack
+//                 sx={{
+//                   position: "relative",
+//                   display: openActions ? "inline-block" : "none",
+//                 }}
+//               >
+//                 {Actions.map((el) => (
+//                   <Tooltip placement="right" title={el.title}>
+//                     <Fab
+//                       sx={{
+//                         position: "absolute",
+//                         top: -el.y,
+//                         backgroundColor: el.color,
+//                       }}
+//                     >
+//                       {el.icon}
+//                     </Fab>
+//                   </Tooltip>
+//                 ))}
+//               </Stack>
+//               <InputAdornment>
+//                 <IconButton
+//                   onClick={() => {
+//                     setOpenActions((prev) => !prev);
+//                   }}
+//                 >
+//                   <LinkSimple />
+//                 </IconButton>
+//               </InputAdornment>
+//             </Stack>
+//           ),
+//           endAdornment: (
+//             <InputAdornment>
+//               <IconButton
+//                 onClick={() => {
+//                   setOpenPicker((prev) => !prev);
+//                 }}
+//               >
+//                 <Smiley />
+//               </IconButton>
+//             </InputAdornment>
+//           ),
+//         }}
+//       />
+//         </Stack>
 
-        <Box
-          sx={{
-            height: 48,
-            width: 48,
-            backgroundColor: theme.palette.primary.main,
-            borderRadius: 1.5,
-          }}
-        >
-          <Stack
-            sx={{
-              height: "100%",
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <IconButton onClick={sendMessageOnClick} disabled={!newMessage} >
-              <PaperPlaneTilt color="#fff" />
-            </IconButton>
-          </Stack>
-        </Box>
-      </Stack>
-    </Box>
-  );
-};
+//         <Box
+//           sx={{
+//             height: 48,
+//             width: 48,
+//             backgroundColor: theme.palette.primary.main,
+//             borderRadius: 1.5,
+//           }}
+//         >
+//           <Stack
+//             sx={{
+//               height: "100%",
+//               width: "100%",
+//               alignItems: "center",
+//               justifyContent: "center",
+//             }}
+//           >
+//             <IconButton onClick={sendMessageOnClick} disabled={!newMessage} >
+//               <PaperPlaneTilt color="#fff" />
+//             </IconButton>
+//           </Stack>
+//         </Box>
+//       </Stack>
+//     </Box>
+//   );
+// };
 
 
 const Conversation = () => {
@@ -292,41 +292,7 @@ const Conversation = () => {
     scrollToBottom(); // Gọi scrollToBottom từ Conversation
   };
 
-  const [newMessage, setNewMessage] = useState('')
-  // const [user, _loading, _error] = useAuthState(auth)
-  const addMessageToDbAndUpdateLastSeen = async () => {
-    await setDoc  (
-      doc(db, 'users', user?.email), {
-        lastSeen: serverTimestamp()
-      }, {merge: true}
-    )
-
-    await addDoc(collection(db, 'messages'), {
-      conversation_id: id,
-      sent_at: serverTimestamp(),
-    text: newMessage,
-    user: user?.email
-    })
-    // reset input field
-  setNewMessage('')
-  // scroll to bottom
-  scrollToBottom()
-  }
-  const sendMessageOnEnter = event => {
-    if (event.key === "Enter") {
-      event.preventDefault()
-      if (!newMessage) return
-      addMessageToDbAndUpdateLastSeen()
-    }
-  }
-
-  const sendMessageOnClick = event => {
-    event.preventDefault()
-    if (!newMessage) return
-    addMessageToDbAndUpdateLastSeen()
-  }
-
-  const [openActions, setOpenActions] = React.useState(false);
+  
    
      
 

@@ -68,12 +68,14 @@ const Actions = [
 
 
 
-const Footer = ({conversation, messages}) => {
+const Footer = ({conversation, messages, onSendMessage}) => {
   const { id } = useParams();
+
 
   const [newMessage, setNewMessage] = useState('')
   const [user, _loading, _error] = useAuthState(auth)
   const addMessageToDbAndUpdateLastSeen = async () => {
+    
     await setDoc(
       doc(db, 'users', user?.email), {
         lastSeen: serverTimestamp()
@@ -89,7 +91,8 @@ const Footer = ({conversation, messages}) => {
     // reset input field
   setNewMessage('')
   // scroll to bottom
-  
+  onSendMessage();
+
   }
   const sendMessageOnEnter = event => {
     if (event.key === "Enter") {
@@ -106,7 +109,13 @@ const Footer = ({conversation, messages}) => {
   }
 
   const [openActions, setOpenActions] = React.useState(false);
-   
+  const addEmoji = (e) => {
+    let sym = e.unified.split("-");
+    let codesArray = [];
+    sym.forEach((el) => codesArray.push("0x" + el));
+    let emoji = String.fromCodePoint(...codesArray);
+    setNewMessage(newMessage + emoji);
+  };
      
 
 
@@ -141,7 +150,7 @@ const Footer = ({conversation, messages}) => {
             <Picker
               theme={theme.palette.mode}
               data={data}
-              onEmojiSelect={console.log}
+              onEmojiSelect={addEmoji}
             />
           </Box>
 
