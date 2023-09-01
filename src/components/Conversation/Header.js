@@ -17,14 +17,13 @@ import { toggleSidebar } from "../../redux/slices/app";
 import { useRecipient } from "../../hooks/useRecipient";
 import { convertFirestoreTimestampToString } from "../../utils/getMessagesInConversation";
 
-const Header = ({conversation, messages}) => {
-  
+const Header = ({ conversation, messages }) => {
   const theme = useTheme();
-  const dispatch = useDispatch()
-  
+  const dispatch = useDispatch();
+console.log(conversation);
   const conversationUser = conversation.users;
   console.log(conversationUser);
-  const {recipient, recipientEmail} = useRecipient(conversationUser)
+  const { recipient, recipientEmail } = useRecipient(conversationUser);
   return (
     <Box
       p={2}
@@ -44,9 +43,13 @@ const Header = ({conversation, messages}) => {
         justifyContent={"space-between"}
         sx={{ width: "100%", height: "100%" }}
       >
-        <Stack onClick={() => {
-          dispatch(toggleSidebar())
-        }} direction={"row"} spacing={2}>
+        <Stack
+          onClick={() => {
+            dispatch(toggleSidebar());
+          }}
+          direction={"row"}
+          spacing={2}
+        >
           <Box>
             <StyledBadge
               overlap="circular"
@@ -55,23 +58,27 @@ const Header = ({conversation, messages}) => {
             >
               {/* <Avatar alt={faker.name.fullName()} src={faker.image.avatar()} /> */}
               {recipient?.photoURL ? (
-            <Avatar src={recipient.photoURL} />
-          ) : (
-            <Avatar>
-              {" "}
-              {recipientEmail && recipientEmail[0].toUpperCase()}
-            </Avatar>
-          )}
+                <Avatar src={recipient.photoURL} />
+              ) : (
+                <Avatar>
+                  {" "}
+                  {recipientEmail && recipientEmail[0].toUpperCase()}
+                </Avatar>
+              )}
             </StyledBadge>
           </Box>
           <Stack spacing={0.2}>
             <Typography variant="subtitle2">{recipientEmail}</Typography>
             <Typography variant="caption">
               {/* Online */}
-              {recipient && <span>Last online: {convertFirestoreTimestampToString(recipient.lastSeen)}</span>}
-              </Typography>
+              {recipient && (
+                <span>
+                  Last online:{" "}
+                  {convertFirestoreTimestampToString(recipient.lastSeen)}
+                </span>
+              )}
+            </Typography>
           </Stack>
-          
         </Stack>
         <Stack direction={"row"} alignItems={"center"} spacing={3}>
           <IconButton>

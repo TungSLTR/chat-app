@@ -24,61 +24,75 @@ import {
   VideoCamera,
   X,
 } from "phosphor-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { UpdateSidebarType, toggleSidebar } from "../redux/slices/app";
+import { UpdateSidebarType, resetConversation, toggleSidebar } from "../redux/slices/app";
 import { faker } from "@faker-js/faker";
 import AntSwitch from "./AntSwitch";
+import { deleteDoc, doc, getDoc, getDocs } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { generateQueryGetMessages, transformMessage } from "../utils/getMessagesInConversation";
+import { useRecipient } from "../hooks/useRecipient";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const BlockDialog = ({open, handleClose}) => {
+const BlockDialog = ({ open, handleClose }) => {
   return (
     <Dialog
-    open={open}
-    TransitionComponent={Transition}
-    keepMounted
-    onClose={handleClose}
-    aria-describedby="alert-dialog-slide-description"
-  >
-    <DialogTitle>{"Block this contact"}</DialogTitle>
-    <DialogContent>
-      <DialogContentText id="alert-dialog-slide-description">
-        Are you sure?
-      </DialogContentText>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={handleClose}>Cancel</Button>
-      <Button onClick={handleClose}>Yes</Button>
-    </DialogActions>
-  </Dialog>
-  )
-}
+      open={open}
+      TransitionComponent={Transition}
+      keepMounted
+      onClose={handleClose}
+      aria-describedby="alert-dialog-slide-description"
+    >
+      <DialogTitle>{"Block this contact"}</DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-slide-description">
+          Are you sure?
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose}>Yes</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
-const DeleteDialog = ({open, handleClose}) => {
+const DeleteDialog = ({ open, handleClose,onDelete  }) => {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const handleYesClick = () => {
+    onDelete(); // Gọi hàm xóa cuộc trò chuyện ở đây
+    handleClose(); // Đóng dialog sau khi xóa
+    dispatch(toggleSidebar(), resetConversation());
+    navigate("/app/")
+  };
   return (
     <Dialog
-    open={open}
-    TransitionComponent={Transition}
-    keepMounted
-    onClose={handleClose}
-    aria-describedby="alert-dialog-slide-description"
-  >
-    <DialogTitle>{"Delete this chat"}</DialogTitle>
-    <DialogContent>
-      <DialogContentText id="alert-dialog-slide-description">
-        Are you sure?
-      </DialogContentText>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={handleClose}>Cancel</Button>
-      <Button onClick={handleClose}>Yes</Button>
-    </DialogActions>
-  </Dialog>
-  )
-}
+      open={open}
+      TransitionComponent={Transition}
+      keepMounted
+      onClose={handleClose}
+      aria-describedby="alert-dialog-slide-description"
+    >
+      <DialogTitle>{"Delete this chat"}</DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-slide-description">
+          Are you sure?
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleYesClick}>Yes</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const Contact = () => {
   const theme = useTheme();
@@ -89,12 +103,45 @@ const Contact = () => {
   const [openDelete, setOpenDelete] = useState(false);
 
   const handleCloseBlock = () => {
-    setOpenBlock(false)
-  }
+    setOpenBlock(false);
+  };
   const handleCloseDelete = () => {
-    setOpenDelete(false)
-  }
+    setOpenDelete(false);
+  };
+  const { id } = useParams();
+  const deleteConversation = async (id) => {
+    await deleteDoc(doc(db, "conversations", id));
+  };
+  const [user, _loading, _error] = useAuthState(auth)
+  const [conversation, setConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+ 
+  const [isLoading, setIsLoading] = useState(true);
 
+ 
+
+ 
+  
+  useEffect(() => {
+    const fetchConversation = async () => {
+      const conversationRef = doc(db, "conversations", id);
+      const conversationSnapshot = await getDoc(conversationRef);
+      setConversation(conversationSnapshot.data());
+      console.log(conversationSnapshot.data());
+      
+      setIsLoading(false);
+    };
+
+  
+    console.log(id);
+    console.log(messages);
+    console.log(conversation);
+    fetchConversation();
+   
+  }, [id]);
+  const conversationUser = conversation.users;
+  console.log(conversationUser);
+  const {recipient, recipientEmail} = useRecipient(conversationUser)
   return (
     <Box sx={{ width: 320, height: "100vh" }}>
       <Stack sx={{ height: "100%" }}>
@@ -209,9 +256,11 @@ const Contact = () => {
                 <Star size={21} />
                 <Typography variant="subtitle2">Starred Messages</Typography>
               </Stack>
-              <IconButton  onClick={() => {
+              <IconButton
+                onClick={() => {
                   dispatch(UpdateSidebarType("STARRED"));
-                }}>
+                }}
+              >
                 <CaretRight />
               </IconButton>
             </Stack>
@@ -237,22 +286,42 @@ const Contact = () => {
               </Stack>
             </Stack>
             <Stack direction={"row"} alignItems={"center"} spacing={2}>
-              <Button onClick={() => {
-                setOpenBlock(true)
-              }} startIcon={<Prohibit />} fullWidth variant="outlined">
+              <Button
+                onClick={() => {
+                  setOpenBlock(true);
+                }}
+                startIcon={<Prohibit />}
+                fullWidth
+                variant="outlined"
+              >
                 Block
               </Button>
-              <Button onClick={() => {
-                setOpenDelete(true)
-              }} startIcon={<Trash />} fullWidth variant="outlined">
+              <Button
+                onClick={() => {
+                  setOpenDelete(true);
+                }}
+                startIcon={<Trash />}
+                fullWidth
+                variant="outlined"
+              >
                 Delete
               </Button>
             </Stack>
           </Stack>
         </div>
       </Stack>
-      {openBlock && <BlockDialog open={openBlock} handleClose={handleCloseBlock}/>}
-      {openDelete && <DeleteDialog open={openDelete} handleClose={handleCloseDelete}/>}
+      {openBlock && (
+        <BlockDialog open={openBlock} handleClose={handleCloseBlock} />
+      )}
+      {openDelete && (
+        <DeleteDialog
+          open={openDelete}
+          handleClose={handleCloseDelete}
+          onDelete={() => {
+            deleteConversation(id);
+          }}
+        />
+      )}
     </Box>
   );
 };

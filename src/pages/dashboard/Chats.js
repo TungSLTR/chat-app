@@ -36,7 +36,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../../firebase";
 import * as validator from "email-validator";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { addDoc, collection, query, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, query, where } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 const StyledNewChatButton = styled(Button)`
   width: 100%;
@@ -47,6 +47,8 @@ const Chats = () => {
   const [user, __loading, __error] = useAuthState(auth);
   const [isOpenNewConversation, setIsOpenNewConversation] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
+  const [emailError, setEmailError] = useState('');
+
   const toggleNewConversationDialog = (isOpen) => {
     setIsOpenNewConversation(isOpen);
     if (!isOpen) {
@@ -58,7 +60,11 @@ const Chats = () => {
   };
 
   const isInvitingSelf = recipientEmail === user?.email;
-
+  const isUserExist = async (email) => {
+    const userRef = doc(db, 'users', email);
+    const userSnapshot = await getDoc(userRef);
+    return userSnapshot.exists();
+  };
   const queryGetConversationsForCurrentUser = user?.email
     ? query(
         collection(db, "conversations"),
@@ -73,20 +79,52 @@ const Chats = () => {
       conversation.data().users.includes(recipientEmail)
     );
 
+  // const createConversation = async () => {
+  //   if (!recipientEmail) return;
+
+  //   if (
+  //     validator.validate(recipientEmail) &&
+  //   !isInvitingSelf &&
+  //   !isConversationAlreadyExists(recipientEmail) &&
+  //   (await isUserExist(recipientEmail))
+  //   ) {
+  //     //add
+
+  //     await addDoc(collection(db, "conversations"), {
+  //       users: [user?.email, recipientEmail],
+  //     });
+  //   }
+  //   closeNewConversationDialog();
+  // };
   const createConversation = async () => {
-    if (!recipientEmail) return;
-
-    if (
-      validator.validate(recipientEmail) &&
-      !isInvitingSelf &&
-      !isConversationAlreadyExists(recipientEmail)
-    ) {
-      //add
-
-      await addDoc(collection(db, "conversations"), {
-        users: [user?.email, recipientEmail],
-      });
+    if (!recipientEmail) {
+      setEmailError('Email is required');
+      return;
     }
+  
+    if (!validator.validate(recipientEmail)) {
+      setEmailError('Invalid email format');
+      return;
+    }
+  
+    if (isInvitingSelf) {
+      setEmailError('You cannot invite yourself');
+      return;
+    }
+  
+    if (isConversationAlreadyExists(recipientEmail)) {
+      setEmailError('Conversation already exists');
+      return;
+    }
+  
+    if (!(await isUserExist(recipientEmail))) {
+      setEmailError('User does not exist');
+      return;
+    }
+  
+    await addDoc(collection(db, 'conversations'), {
+      users: [user?.email, recipientEmail],
+    });
     closeNewConversationDialog();
   };
   const [openDialog, setOpenDialog] = useState(false);
@@ -228,7 +266,10 @@ const Chats = () => {
             value={recipientEmail}
             onChange={(event) => {
               setRecipientEmail(event.target.value);
+              setEmailError(''); // Clear any previous error when user types
             }}
+            error={!!emailError} // Set error state based on whether there's an error message
+            helperText={emailError}
           />
         </DialogContent>
         <DialogActions>

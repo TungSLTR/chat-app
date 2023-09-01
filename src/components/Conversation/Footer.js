@@ -39,6 +39,7 @@ const Actions = [
     icon: <Image size={24} />,
     y: 102,
     title: "Photo/Video",
+    
   },
   {
     color: "#1b8cfe",
