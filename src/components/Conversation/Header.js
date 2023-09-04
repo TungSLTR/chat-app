@@ -24,6 +24,8 @@ console.log(conversation);
   const conversationUser = conversation.users;
   console.log(conversationUser);
   const { recipient, recipientEmail } = useRecipient(conversationUser);
+  console.log(recipient);
+  console.log(recipientEmail);
   return (
     <Box
       p={2}
@@ -80,7 +82,7 @@ console.log(conversation);
             </Typography>
           </Stack>
         </Stack>
-        <Stack direction={"row"} alignItems={"center"} spacing={3}>
+        {/* <Stack direction={"row"} alignItems={"center"} spacing={3}>
           <IconButton>
             <VideoCamera />
           </IconButton>
@@ -94,7 +96,7 @@ console.log(conversation);
           <IconButton>
             <CaretDown />
           </IconButton>
-        </Stack>
+        </Stack> */}
       </Stack>
     </Box>
   );

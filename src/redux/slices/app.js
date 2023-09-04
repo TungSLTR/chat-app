@@ -225,7 +225,7 @@ export const resetConversation = () => {
     dispatch(
       slice.actions.selectConversation({
         room_id: null,
-        chat_type: null
+        chat_type: ""
       })
     );
   };

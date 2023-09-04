@@ -38,6 +38,8 @@ import { styled, useTheme } from "@mui/material/styles";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+import Contact from "../Contact";
+import ChatElement from "../ChatElement";
 
 
 
@@ -249,6 +251,7 @@ const Conversation = () => {
   const [messages, setMessages] = useState([]);
   const { id } = useParams();
   const [isLoading, setIsLoading] = useState(true);
+  const [msg, setMsg] = useState('')
   useEffect(() => {
     // Tự động cuộn xuống khi có tin nhắn mới
     animateScroll.scrollToBottom({
@@ -274,14 +277,23 @@ const Conversation = () => {
 
     const fetchMessages = async () => {
       const queryMessages = generateQueryGetMessages(id);
+      console.log("Query:", queryMessages); // Kiểm tra câu truy vấn có đúng không
+    
       const messagesSnapshot = await getDocs(queryMessages);
-
-      // console.log(messagesSnapshot.docs[0].data());
+      console.log("Messages from Firestore:", messagesSnapshot.docs.map((messageDoc) => messageDoc.data())); // Kiểm tra dữ liệu từ Firestore
+    
       const messagesTrans = messagesSnapshot.docs.map((messageDoc) =>
         transformMessage(messageDoc)
       );
+    
+      if (messagesTrans.length > 0) {
+        const latestMessageText = messagesTrans[messagesTrans.length - 1].text;
+        setMsg(latestMessageText);
+      }
+    
       setMessages(messagesTrans);
     };
+    console.log(msg);
     console.log(id);
     console.log(messages);
     console.log(conversation);
@@ -289,17 +301,12 @@ const Conversation = () => {
     fetchMessages();
   }, [id]);
   const handleSendMessage = () => {
-    scrollToBottom(); // Gọi scrollToBottom từ Conversation
+    scrollToBottom(); 
   };
-
-  
-   
-     
-
-
   const theme = useTheme();
-
+  console.log(messages);
   const [openPicker, setOpenPicker] = React.useState(false);
+ 
   if (isLoading) {
     return  <Stack spacing={2} sx={{height: "100%", width: "100%", alignItems: 'center', justifyContent: 'center'}} >
     <NoChatSVG/>
@@ -307,17 +314,21 @@ const Conversation = () => {
   </Stack>;
   }
   return (
+    
     <Stack height={"100%"} maxHeight={"100vh"} width={"auto"}>
       {/* Chat Header */}
+    
+      {/* <Contact  conversation={conversation} messages={messages} /> */}
+     
       <Header conversation={conversation} messages={messages}  />
       {/* Msg */}
       <div id="message-container" className="scrollbar" style={{ overflowY: "auto",  height: "100vh" }}>
         <Box width={"100%"} sx={{ flexGrow: 1, height: "100%" }}>
           <Message conversation={conversation} messages={messages}  />
-          <div ref={endOfMessagesRef} style={{marginBottom: '50px'}} />
+          <div ref={endOfMessagesRef}  />
         </Box>
       </div>
-
+      
       {/* Chat Footer */}
       <Footer conversation={conversation} messages={messages} onSendMessage={handleSendMessage}/>
     

@@ -24,77 +24,21 @@ import {
   VideoCamera,
   X,
 } from "phosphor-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { UpdateSidebarType, resetConversation, toggleSidebar } from "../redux/slices/app";
+import {
+  UpdateSidebarType,
+  resetConversation,
+  toggleSidebar,
+} from "../redux/slices/app";
 import { faker } from "@faker-js/faker";
 import AntSwitch from "./AntSwitch";
-import { deleteDoc, doc, getDoc, getDocs } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { deleteDoc, doc } from "firebase/firestore";
+import { db } from "../firebase";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { generateQueryGetMessages, transformMessage } from "../utils/getMessagesInConversation";
+
 import { useRecipient } from "../hooks/useRecipient";
-
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
-
-const BlockDialog = ({ open, handleClose }) => {
-  return (
-    <Dialog
-      open={open}
-      TransitionComponent={Transition}
-      keepMounted
-      onClose={handleClose}
-      aria-describedby="alert-dialog-slide-description"
-    >
-      <DialogTitle>{"Block this contact"}</DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-slide-description">
-          Are you sure?
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleClose}>Yes</Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-const DeleteDialog = ({ open, handleClose,onDelete  }) => {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
-  const handleYesClick = () => {
-    onDelete(); // Gọi hàm xóa cuộc trò chuyện ở đây
-    handleClose(); // Đóng dialog sau khi xóa
-    dispatch(toggleSidebar(), resetConversation());
-    navigate("/app/")
-  };
-  return (
-    <Dialog
-      open={open}
-      TransitionComponent={Transition}
-      keepMounted
-      onClose={handleClose}
-      aria-describedby="alert-dialog-slide-description"
-    >
-      <DialogTitle>{"Delete this chat"}</DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-slide-description">
-          Are you sure?
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleYesClick}>Yes</Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-const Contact = () => {
+const Contact = ({ conversation, messages }) => {
   const theme = useTheme();
 
   const dispatch = useDispatch();
@@ -112,36 +56,13 @@ const Contact = () => {
   const deleteConversation = async (id) => {
     await deleteDoc(doc(db, "conversations", id));
   };
-  const [user, _loading, _error] = useAuthState(auth)
-  const [conversation, setConversation] = useState(null);
-  const [messages, setMessages] = useState([]);
- 
-  const [isLoading, setIsLoading] = useState(true);
 
- 
-
- 
-  
-  useEffect(() => {
-    const fetchConversation = async () => {
-      const conversationRef = doc(db, "conversations", id);
-      const conversationSnapshot = await getDoc(conversationRef);
-      setConversation(conversationSnapshot.data());
-      console.log(conversationSnapshot.data());
-      
-      setIsLoading(false);
-    };
-
-  
-    console.log(id);
-    console.log(messages);
-    console.log(conversation);
-    fetchConversation();
-   
-  }, [id]);
+  console.log(conversation);
   const conversationUser = conversation.users;
   console.log(conversationUser);
-  const {recipient, recipientEmail} = useRecipient(conversationUser)
+  const { recipient, recipientEmail } = useRecipient(conversationUser);
+  console.log(recipient);
+  console.log(recipientEmail);
   return (
     <Box sx={{ width: 320, height: "100vh" }}>
       <Stack sx={{ height: "100%" }}>
@@ -185,18 +106,24 @@ const Contact = () => {
             spacing={3}
           >
             <Stack alignItems={"center"} direction={"row"} spacing={2}>
-              <Avatar
-                src={faker.image.avatar()}
-                alt={faker.name.firstName()}
-                sx={{ height: 64, width: 64 }}
-              ></Avatar>
+              {recipient?.photoURL ? (
+                <Avatar
+                  src={recipient.photoURL}
+                  sx={{ height: 64, width: 64 }}
+                />
+              ) : (
+                <Avatar sx={{ height: 64, width: 64 }}>
+                  {" "}
+                  {recipientEmail && recipientEmail[0].toUpperCase()}
+                </Avatar>
+              )}
               <Stack spacing={0.5}>
                 <Typography variant="article" fontWeight={600}>
-                  {faker.name.fullName()}
+                  {recipientEmail}
                 </Typography>
-                <Typography variant="body2" fontWeight={500}>
+                {/* <Typography variant="body2" fontWeight={500}>
                   {"+91 777 666 555"}
-                </Typography>
+                </Typography> */}
               </Stack>
             </Stack>
             <Stack
@@ -323,6 +250,64 @@ const Contact = () => {
         />
       )}
     </Box>
+  );
+};
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
+const BlockDialog = ({ open, handleClose }) => {
+  return (
+    <Dialog
+      open={open}
+      TransitionComponent={Transition}
+      keepMounted
+      onClose={handleClose}
+      aria-describedby="alert-dialog-slide-description"
+    >
+      <DialogTitle>{"Block this contact"}</DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-slide-description">
+          Are you sure?
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose}>Yes</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+const DeleteDialog = ({ open, handleClose, onDelete }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const handleYesClick = () => {
+    onDelete();
+    handleClose();
+    dispatch(toggleSidebar(), resetConversation());
+    navigate("/app");
+    window.location.reload();
+  };
+  return (
+    <Dialog
+      open={open}
+      TransitionComponent={Transition}
+      keepMounted
+      onClose={handleClose}
+      aria-describedby="alert-dialog-slide-description"
+    >
+      <DialogTitle>{"Delete this chat"}</DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-slide-description">
+          Are you sure?
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleYesClick}>Yes</Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

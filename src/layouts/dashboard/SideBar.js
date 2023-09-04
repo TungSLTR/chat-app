@@ -17,15 +17,18 @@ import { faker } from "@faker-js/faker";
 import Logo from "../../assets/Images/logo.ico";
 import { Gear } from "phosphor-react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { LogoutUser } from "../../redux/slices/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
+import { resetConversation, toggleSidebar } from "../../redux/slices/app";
 
 const getPath = (index) => {
+  
   switch (index) {
     case 0:
+      
       return "/app";
 
     case 1:
@@ -55,6 +58,8 @@ const getMenuPath = (index) => {
 
 const SideBar = () => {
   const dispatch = useDispatch();
+  const state = useSelector((state) => state);
+ 
   const [user, loading, error] = useAuthState(auth);
   const theme = useTheme();
   const navigate = useNavigate();
@@ -134,6 +139,10 @@ const SideBar = () => {
                 <IconButton
                   onClick={() => {
                     setSelected(el.index);
+                    if (el.index === 0 && state.app.sidebar.open) {
+                      // Nếu là nút /app và sidebar.open là true, thực hiện dispatch ở đây
+                      dispatch(toggleSidebar());
+                    }
                     navigate(getPath(el.index));
                   }}
                   sx={{
@@ -229,8 +238,9 @@ const SideBar = () => {
                     onClick={() => {
                       if (idx === 2) {
                         //if idx is 2 then dispatch logout
-                        dispatch(LogoutUser());
                         logoutGG()
+                        dispatch(LogoutUser());
+                       
                       }
                       else {
                         navigate(getMenuPath(idx));

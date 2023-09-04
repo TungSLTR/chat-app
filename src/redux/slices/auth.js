@@ -6,9 +6,9 @@ import { showSnackbar } from "./app";
 const initialState = {
   isLoading: false,
   isLoggedIn: false,
-  token: "",
+
   user: null,
-  user_id: null,
+ 
   email: "",
   error: false,
 };
@@ -28,8 +28,7 @@ const slice = createSlice({
     },
     signOut(state, action) {
       state.isLoggedIn = false;
-      state.token = "";
-      state.user_id = null;
+      
     },
     updateRegisterEmail(state, action) {
       state.email = action.payload.email;
@@ -99,7 +98,7 @@ export function LogInGGUser() {
 
 export function LogoutUser() {
   return async (dispatch, getState) => {
-    window.localStorage.removeItem("user_id");
+    
     dispatch(slice.actions.signOut());
   };
 }

@@ -21,7 +21,13 @@ import {
 import { styled, useTheme } from "@mui/material/styles";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
-import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useParams } from "react-router-dom";
@@ -39,7 +45,6 @@ const Actions = [
     icon: <Image size={24} />,
     y: 102,
     title: "Photo/Video",
-    
   },
   {
     color: "#1b8cfe",
@@ -67,47 +72,45 @@ const Actions = [
   },
 ];
 
-
-
-const Footer = ({conversation, messages, onSendMessage}) => {
+const Footer = ({ conversation, messages, onSendMessage }) => {
   const { id } = useParams();
 
-
-  const [newMessage, setNewMessage] = useState('')
-  const [user, _loading, _error] = useAuthState(auth)
+  console.log(conversation);
+  const [newMessage, setNewMessage] = useState("");
+  const [user, _loading, _error] = useAuthState(auth);
   const addMessageToDbAndUpdateLastSeen = async () => {
-    
     await setDoc(
-      doc(db, 'users', user?.email), {
-        lastSeen: serverTimestamp()
-      }, {merge: true}
-    )
+      doc(db, "users", user?.email),
+      {
+        lastSeen: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-    await addDoc(collection(db, 'messages'), {
+    await addDoc(collection(db, "messages"), {
       conversation_id: id,
       sent_at: serverTimestamp(),
-    text: newMessage,
-    user: user?.email
-    })
+      text: newMessage,
+      user: user?.email,
+    });
     // reset input field
-  setNewMessage('')
-  // scroll to bottom
-  onSendMessage();
-
-  }
-  const sendMessageOnEnter = event => {
+    setNewMessage("");
+    // scroll to bottom
+    onSendMessage();
+  };
+  const sendMessageOnEnter = (event) => {
     if (event.key === "Enter") {
-      event.preventDefault()
-      if (!newMessage) return
-      addMessageToDbAndUpdateLastSeen()
+      event.preventDefault();
+      if (!newMessage) return;
+      addMessageToDbAndUpdateLastSeen();
     }
-  }
+  };
 
-  const sendMessageOnClick = event => {
-    event.preventDefault()
-    if (!newMessage) return
-    addMessageToDbAndUpdateLastSeen()
-  }
+  const sendMessageOnClick = (event) => {
+    event.preventDefault();
+    if (!newMessage) return;
+    addMessageToDbAndUpdateLastSeen();
+  };
 
   const [openActions, setOpenActions] = React.useState(false);
   const addEmoji = (e) => {
@@ -117,8 +120,6 @@ const Footer = ({conversation, messages, onSendMessage}) => {
     let emoji = String.fromCodePoint(...codesArray);
     setNewMessage(newMessage + emoji);
   };
-     
-
 
   const theme = useTheme();
 
@@ -156,61 +157,61 @@ const Footer = ({conversation, messages, onSendMessage}) => {
           </Box>
 
           {/* <ChatInput setOpenPicker={setOpenPicker} /> */}
-           <StyledInput
-        fullWidth
-        placeholder="Aa"
-        variant="filled"
-        value={newMessage}
-        onChange={event => setNewMessage(event.target.value)}
-        onKeyDown={sendMessageOnEnter}
-        InputProps={{
-          disableUnderline: true,
-          startAdornment: (
-            <Stack sx={{ width: "max-content" }}>
-              <Stack
-                sx={{
-                  position: "relative",
-                  display: openActions ? "inline-block" : "none",
-                }}
-              >
-                {Actions.map((el) => (
-                  <Tooltip placement="right" title={el.title}>
-                    <Fab
-                      sx={{
-                        position: "absolute",
-                        top: -el.y,
-                        backgroundColor: el.color,
+          <StyledInput
+            fullWidth
+            placeholder="Aa"
+            variant="filled"
+            value={newMessage}
+            onChange={(event) => setNewMessage(event.target.value)}
+            onKeyDown={sendMessageOnEnter}
+            InputProps={{
+              disableUnderline: true,
+              startAdornment: (
+                <Stack sx={{ width: "max-content" }}>
+                  <Stack
+                    sx={{
+                      position: "relative",
+                      display: openActions ? "inline-block" : "none",
+                    }}
+                  >
+                    {Actions.map((el) => (
+                      <Tooltip placement="right" title={el.title}>
+                        <Fab
+                          sx={{
+                            position: "absolute",
+                            top: -el.y,
+                            backgroundColor: el.color,
+                          }}
+                        >
+                          {el.icon}
+                        </Fab>
+                      </Tooltip>
+                    ))}
+                  </Stack>
+                  <InputAdornment>
+                    <IconButton
+                      onClick={() => {
+                        setOpenActions((prev) => !prev);
                       }}
                     >
-                      {el.icon}
-                    </Fab>
-                  </Tooltip>
-                ))}
-              </Stack>
-              <InputAdornment>
-                <IconButton
-                  onClick={() => {
-                    setOpenActions((prev) => !prev);
-                  }}
-                >
-                  <LinkSimple />
-                </IconButton>
-              </InputAdornment>
-            </Stack>
-          ),
-          endAdornment: (
-            <InputAdornment>
-              <IconButton
-                onClick={() => {
-                  setOpenPicker((prev) => !prev);
-                }}
-              >
-                <Smiley />
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
+                      <LinkSimple />
+                    </IconButton>
+                  </InputAdornment>
+                </Stack>
+              ),
+              endAdornment: (
+                <InputAdornment>
+                  <IconButton
+                    onClick={() => {
+                      setOpenPicker((prev) => !prev);
+                    }}
+                  >
+                    <Smiley />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
         </Stack>
 
         <Box
@@ -229,7 +230,7 @@ const Footer = ({conversation, messages, onSendMessage}) => {
               justifyContent: "center",
             }}
           >
-            <IconButton onClick={sendMessageOnClick} disabled={!newMessage} >
+            <IconButton onClick={sendMessageOnClick} disabled={!newMessage}>
               <PaperPlaneTilt color="#fff" />
             </IconButton>
           </Stack>

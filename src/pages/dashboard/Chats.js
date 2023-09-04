@@ -11,17 +11,18 @@ import {
   DialogContentText,
   TextField,
   DialogActions,
+  useMediaQuery,
 } from "@mui/material";
 import {
   ArchiveBox,
   CircleDashed,
   MagnifyingGlass,
+  Plus,
   User,
 } from "phosphor-react";
 import React, { useEffect, useState } from "react";
 import { styled, useTheme } from "@mui/material/styles";
 
-import { ChatList } from "../../data";
 import "../../global.css";
 import {
   Search,
@@ -30,25 +31,37 @@ import {
 } from "../../components/Search";
 import ChatElement from "../../components/ChatElement";
 import Friends from "../../sections/main/Friends";
-import { socket } from "../../socket";
-import { useSelector } from "react-redux";
+
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../../firebase";
 import * as validator from "email-validator";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { addDoc, collection, doc, getDoc, query, where } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { getLatestMessageQuery } from "../../utils/getMessagesInConversation";
+
 const StyledNewChatButton = styled(Button)`
   width: 100%;
 `;
-const user_id = window.localStorage.getItem("user_id");
 
 const Chats = () => {
   const [user, __loading, __error] = useAuthState(auth);
+  const theme = useTheme();
   const [isOpenNewConversation, setIsOpenNewConversation] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
-  const [emailError, setEmailError] = useState('');
+  const [emailError, setEmailError] = useState("");
+  const [latestMessages, setLatestMessages] = useState({});
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
 
+  const containerWidth = isTablet ? 120 : 320;
   const toggleNewConversationDialog = (isOpen) => {
     setIsOpenNewConversation(isOpen);
     if (!isOpen) {
@@ -61,7 +74,7 @@ const Chats = () => {
 
   const isInvitingSelf = recipientEmail === user?.email;
   const isUserExist = async (email) => {
-    const userRef = doc(db, 'users', email);
+    const userRef = doc(db, "users", email);
     const userSnapshot = await getDoc(userRef);
     return userSnapshot.exists();
   };
@@ -78,67 +91,46 @@ const Chats = () => {
     conversationsSnapShot?.docs.find((conversation) =>
       conversation.data().users.includes(recipientEmail)
     );
-
-  // const createConversation = async () => {
-  //   if (!recipientEmail) return;
-
-  //   if (
-  //     validator.validate(recipientEmail) &&
-  //   !isInvitingSelf &&
-  //   !isConversationAlreadyExists(recipientEmail) &&
-  //   (await isUserExist(recipientEmail))
-  //   ) {
-  //     //add
-
-  //     await addDoc(collection(db, "conversations"), {
-  //       users: [user?.email, recipientEmail],
-  //     });
-  //   }
-  //   closeNewConversationDialog();
-  // };
+  const sendMessageOnEnter = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (!recipientEmail) return;
+      createConversation();
+    }
+  };
   const createConversation = async () => {
     if (!recipientEmail) {
-      setEmailError('Email is required');
+      setEmailError("Email is required");
       return;
     }
-  
+
     if (!validator.validate(recipientEmail)) {
-      setEmailError('Invalid email format');
+      setEmailError("Invalid email format");
       return;
     }
-  
+
     if (isInvitingSelf) {
-      setEmailError('You cannot invite yourself');
+      setEmailError("You cannot invite yourself");
       return;
     }
-  
+
     if (isConversationAlreadyExists(recipientEmail)) {
-      setEmailError('Conversation already exists');
+      setEmailError("Conversation already exists");
       return;
     }
-  
+
     if (!(await isUserExist(recipientEmail))) {
-      setEmailError('User does not exist');
+      setEmailError("User does not exist");
       return;
     }
-  
-    await addDoc(collection(db, 'conversations'), {
+
+    await addDoc(collection(db, "conversations"), {
       users: [user?.email, recipientEmail],
     });
     closeNewConversationDialog();
   };
   const [openDialog, setOpenDialog] = useState(false);
 
-  const theme = useTheme();
-
-  // const { conversations } = useSelector(
-  //   (state) => state.conversation.direct_chat
-  // );
-  // useEffect(() => {
-  //   socket.emit("get_direct_conversations", { user_id }, (data) => {
-  //     //data => list of conversations
-  //   });
-  // }, []);
   const handleCloseDialog = () => {
     setOpenDialog(false);
   };
@@ -147,17 +139,79 @@ const Chats = () => {
   };
 
   const navigate = useNavigate();
+  const fetchLatestMessage = (conversationId) => {
+    const latestMessageQuery = getLatestMessageQuery(conversationId);
+    const unsubscribe = onSnapshot(latestMessageQuery, (querySnapshot) => {
+      if (!querySnapshot.empty) {
+        const latestMessage = querySnapshot.docs[0].data();
+        setLatestMessages((prevMessages) => ({
+          ...prevMessages,
+          [conversationId]: latestMessage,
+        }));
+        console.log("Tin nhắn mới nhất:", latestMessage);
+      } else {
+        // Nếu không có tin nhắn, bạn có thể đặt giá trị null hoặc một giá trị mặc định khác cho latestMessages
+        setLatestMessages((prevMessages) => ({
+          ...prevMessages,
+          [conversationId]: null,
+        }));
+        console.log("Không có tin nhắn trong cuộc trò chuyện.");
+      }
+    });
+    return unsubscribe; // Trả về hàm unsubscribe để ngừng theo dõi sau này
+  };
 
-  // const onSelectConversation = (id) => {
-  //   navigate(`/app/${id}`);
-  // };
+  const [sortedConversations, setSortedConversations] = useState([]);
+
+  useEffect(() => {
+    const unsubscribeCallbacks = [];
+
+    conversationsSnapShot?.docs.forEach((conversation) => {
+      const conversationId = conversation.id;
+      const unsubscribe = fetchLatestMessage(conversationId);
+      unsubscribeCallbacks.push(unsubscribe);
+    });
+
+    // Ngừng theo dõi khi component unmount
+    return () => {
+      unsubscribeCallbacks.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [conversationsSnapShot]);
+
+  useEffect(() => {
+    // Sắp xếp danh sách cuộc trò chuyện khi latestMessages thay đổi
+    const sorted = conversationsSnapShot?.docs
+      .map((conversation) => {
+        const conversationId = conversation.id;
+        return {
+          id: conversationId,
+          users: conversation.data().users,
+          latestMessage: latestMessages[conversationId],
+        };
+      })
+      .sort((a, b) => {
+        // So sánh thời gian gửi tin nhắn mới nhất trong a và b
+        const timeA = a.latestMessage ? a.latestMessage.sent_at || 0 : 0;
+        const timeB = b.latestMessage ? b.latestMessage.sent_at || 0 : 0;
+
+        // Sắp xếp giảm dần theo thời gian
+        return timeB - timeA;
+      });
+
+    setSortedConversations(sorted);
+  }, [conversationsSnapShot, latestMessages]);
+
+  const onSelectConversation = (id) => {
+    navigate(`/app/${id}`);
+  };
+
   return (
     <>
       <Box
         sx={{
           position: "relative",
           height: "100vh",
-          width: 320,
+          width: containerWidth,
           backgroundColor:
             theme.palette.mode === "light"
               ? "#F8FAFF"
@@ -172,18 +226,20 @@ const Chats = () => {
             justifyContent={"space-between"}
           >
             <Typography variant="h5">Chats</Typography>
-            <Stack direction={"row"} alignItems={"center"} spacing={1}>
-              <IconButton
-                onClick={() => {
-                  handleOpenDialog();
-                }}
-              >
-                <User />
-              </IconButton>
-              <IconButton>
-                <CircleDashed />
-              </IconButton>
-            </Stack>
+            {isTablet ? null : (
+              <Stack direction={"row"} alignItems={"center"} spacing={1}>
+                <IconButton
+                  onClick={() => {
+                    handleOpenDialog();
+                  }}
+                >
+                  <User />
+                </IconButton>
+                <IconButton>
+                  <CircleDashed />
+                </IconButton>
+              </Stack>
+            )}
           </Stack>
           <Stack sx={{ width: "100%" }}>
             <Search>
@@ -196,21 +252,24 @@ const Chats = () => {
               />
             </Search>
           </Stack>
-          <Stack spacing={1}>
-            <Stack direction={"row"} alignItems={"center"} spacing={1.5}>
-              <ArchiveBox size={24} />
-              <Button>Archive</Button>
-            </Stack>
-            <Divider />
-          </Stack>
 
-          <StyledNewChatButton
-            onClick={() => {
-              toggleNewConversationDialog(true);
-            }}
-          >
-            Start a new conversation
-          </StyledNewChatButton>
+          {isTablet ? (
+            <IconButton
+              onClick={() => {
+                toggleNewConversationDialog(true);
+              }}
+            >
+              <Plus style={{ color: theme.palette.primary.main }} />
+            </IconButton>
+          ) : (
+            <StyledNewChatButton
+              onClick={() => {
+                toggleNewConversationDialog(true);
+              }}
+            >
+              Start a new conversation
+            </StyledNewChatButton>
+          )}
           <div className="scrollbar" style={{ overflowY: "auto" }}>
             <Stack
               spacing={2}
@@ -234,12 +293,12 @@ const Chats = () => {
                   .map((el) => {
                     return <ChatElement {...el} />;
                   })} */}
-                {conversationsSnapShot?.docs.map((conversation) => (
+                {sortedConversations?.map((sortedConversation) => (
                   <ChatElement
-                    key={conversation.id}
-                    id={conversation.id}
-                    conversationUsers={conversation.data().users}
-                    // onClick={onSelectConversation(conversation.id)}
+                    key={sortedConversation.id}
+                    id={sortedConversation.id}
+                    conversationUsers={sortedConversation.users}
+                    latestMessage={sortedConversation.latestMessage}
                   />
                 ))}
               </Stack>
@@ -264,9 +323,10 @@ const Chats = () => {
             fullWidth
             variant="standard"
             value={recipientEmail}
+            onKeyDown={sendMessageOnEnter}
             onChange={(event) => {
               setRecipientEmail(event.target.value);
-              setEmailError(''); // Clear any previous error when user types
+              setEmailError(""); // Clear any previous error when user types
             }}
             error={!!emailError} // Set error state based on whether there's an error message
             helperText={emailError}

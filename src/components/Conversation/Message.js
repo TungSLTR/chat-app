@@ -16,6 +16,7 @@ import { generateQueryGetMessages, transformMessage } from "../../utils/getMessa
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
+import ChatElement from "../ChatElement";
 
 
 const Message = ({ conversation, messages }) => {
@@ -23,9 +24,9 @@ const Message = ({ conversation, messages }) => {
     const dispatch = useDispatch()
     const navigate = useNavigate()
     const { id } = useParams();
-    const conversationUser = conversation.users;
+  
     const [user, _loading, _error] = useAuthState(auth)
-    const {recipient, recipientEmail} = useRecipient(conversationUser)
+   
   
     const queryGetMessages = generateQueryGetMessages(id)
     const [messagesSnapshot, messagesLoading] = useCollection(queryGetMessages)
@@ -42,12 +43,15 @@ const Message = ({ conversation, messages }) => {
         }
         return null
     }
-    // const endOfMessagesRef = useRef(null)
-    // const scrollToBottom = () => {
-    //   endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth'})
-    // }
+    console.log(messages);
+    // const renderChatElement = messages.length > 0 ? (
+    //   <ChatElement messages={messages} conversationUsers={conversation.users} />
+    // ) : null;
   return (
     <Box p={3}>
+   {/* <div style={{ display: "none" }}>
+        {renderChatElement}
+      </div> */}
       <Stack spacing={3}>
         {showMessages()}
         {/* <EndOfMessagesForAutoScroll ref={endOfMessagesRef}/> */}
